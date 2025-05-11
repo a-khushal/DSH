@@ -12,13 +12,20 @@
     "scripting",
     "webRequest",
     "webRequestBlocking",
-    "http://*/*",
-    "https://*/*"
+    "tabs"
   ],
+  "host_permissions": [
+    "http://localhost:5000/*",
+    "https://*.clerk.accounts.dev/*",
+    "https://accounts.clerk.dev/*"
+  ],
+  "content_security_policy": {
+    "extension_pages": "script-src 'self' 'wasm-unsafe-eval'; object-src 'self'; frame-src https://*.clerk.accounts.dev/ https://clerk.accounts.dev/ https://accounts.clerk.dev/;"
+  },
   "background": {
     "service_worker": "./src/background/background.ts"
   },
-  "options_page" : "src/optionsPage/optionsPage.html",
+  "options_page": "src/optionsPage/optionsPage.html",
   "content_scripts": [
     {
       "js": ["src/content/content.tsx"],

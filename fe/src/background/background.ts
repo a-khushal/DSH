@@ -3,7 +3,7 @@ import axios from 'axios';
 let currentTaskId: string | null = null;
 let userId: string | null = null;
 
-chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
+chrome.runtime.onMessage.addListener((message, _sender, _sendResponse) => {
     switch (message.type) {
         case 'START_SHARING':
             handleStartSharing();

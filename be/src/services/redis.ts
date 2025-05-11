@@ -1,5 +1,6 @@
-require('dotenv').config();
+import dotenv from 'dotenv';
 import Redis from 'ioredis';
+dotenv.config();
 
 export class RedisService {
     private redis: Redis;
