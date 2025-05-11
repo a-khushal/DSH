@@ -1,0 +1,28 @@
+{
+  "manifest_version": 3,
+  "name": "Decentralized Scraping Hub",
+  "version": "1.0",
+  "description": "Earn tokens for sharing your bandwidth for scraping.",
+  "action": { 
+    "default_popup": "index.html"
+  },
+  "permissions": [
+    "storage",
+    "background",
+    "scripting",
+    "webRequest",
+    "webRequestBlocking",
+    "http://*/*",
+    "https://*/*"
+  ],
+  "background": {
+    "service_worker": "./src/background/background.ts"
+  },
+  "options_page" : "src/optionsPage/optionsPage.html",
+  "content_scripts": [
+    {
+      "js": ["src/content/content.tsx"],
+      "matches": ["<all_urls>"]
+    }
+  ]
+}

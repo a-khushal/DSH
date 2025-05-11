@@ -1,0 +1,73 @@
+generator client {
+  provider = "prisma-client-js"
+  output   = "./generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum TaskStatus {
+  PENDING
+  COMPLETED
+  IN_PROGRESS
+  FAILED
+}
+
+enum UserStatus {
+  ONLINE
+  OFFLINE
+  AWAY
+}
+
+model User {
+  id              String           @id @default(cuid())
+  clerkUserId     String           @unique
+  email           String           @unique
+  totalBandwidth  Float            @default(0)
+  lastActive      DateTime?
+  status          UserStatus       @default(OFFLINE)
+  isAdmin         Boolean          @default(false)
+  createdAt       DateTime         @default(now())
+  updatedAt       DateTime         @updatedAt
+  tasks           Task[]
+  bandwidthUsages BandwidthUsage[]
+  proxyIPs        ProxyIP[]
+}
+
+model ProxyIP {
+  id           String    @id @default(cuid())
+  ipAddress    String    @unique
+  userId       String
+  user         User      @relation(fields: [userId], references: [id])
+  tasks        Task[]
+  isActive     Boolean   @default(true)
+  lastVerified DateTime?
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+}
+
+model Task {
+  id            String     @id @default(cuid())
+  targetUrl     String
+  status        TaskStatus @default(PENDING)
+  bandwidthUsed Float      @default(0)
+  proxyIPId     String
+  data          Json?
+  retryCount    Int        @default(0)
+  createdAt     DateTime   @default(now())
+  updatedAt     DateTime   @updatedAt
+  assignedTo    User?      @relation(fields: [assignedToId], references: [id])
+  assignedToId  String?
+  proxyIP       ProxyIP    @relation(fields: [proxyIPId], references: [id])
+}
+
+model BandwidthUsage {
+  id        String   @id @default(cuid())
+  sessionId String   @default(cuid())
+  bandwidth Float
+  timestamp DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id])
+  userId    String
+}
