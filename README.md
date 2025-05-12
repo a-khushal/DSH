@@ -3,22 +3,18 @@
 > 🚧 **Work in Progress** - This project is currently under active development. Features may change.
 <br/>
 <p align="center">
-  <img src="https://github.com/user-attachments/assets/b1e450e0-1269-41be-89a7-c15b5bb873ca" width="400"/>
-  <br/>
+  <img src="https://github.com/user-attachments/assets/b1e450e0-1269-41be-89a7-c15b5bb873ca" width="400"/><br/>
   <strong>Admin View</strong>
 </p>
 
 <p align="center">
-  <span style="display: inline-block; text-align: center; margin: 10px;">
-    <img src="https://github.com/user-attachments/assets/db3eafad-6390-4247-b913-080ef85f2187" width="300"/><br/>
-    <strong>User View</strong>
-  </span>
-  <span style="display: inline-block; text-align: center; margin: 10px;">
-    <img src="https://github.com/user-attachments/assets/4d9662fc-ee7a-405d-b636-98315d690848" width="300"/><br/>
-    <strong>User View</strong>
-  </span>
+  <img src="https://github.com/user-attachments/assets/db3eafad-6390-4247-b913-080ef85f2187" width="300" style="margin-right: 10px;"/>
+  <img src="https://github.com/user-attachments/assets/4d9662fc-ee7a-405d-b636-98315d690848" width="300"/>
 </p>
 
+<p align="center">
+  <strong>User View</strong> &nbsp;&nbsp;&nbsp;&nbsp; <strong>User View</strong>
+</p>
 
 ### TODO
 - [x] Basic user authentication (sign up/sign in)
