@@ -19,9 +19,9 @@
 ### TODO
 - [x] Basic user authentication (sign up/sign in)
 - [x] Admin task management interface
-- [x] Basic proxy connection system
+- [x] proxy connection system
 - [x] Task creation with priority levels
-- [ ] Track actual bandwidth usage
+- [ ] Track bandwidth usage
 - [ ] Calculate and show real earnings
 - [ ] token incentives
 - [ ] Add more task status updates
