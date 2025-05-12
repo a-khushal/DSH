@@ -8,12 +8,12 @@
 </p>
 <br/>
 <p align="center">
-  <img src="https://github.com/user-attachments/assets/db3eafad-6390-4247-b913-080ef85f2187" width="500" style="margin-right: 10px;"/>
+  <img src="https://github.com/user-attachments/assets/db3eafad-6390-4247-b913-080ef85f2187" width="500" style="margin-right: 30px;"/>
   <img src="https://github.com/user-attachments/assets/4d9662fc-ee7a-405d-b636-98315d690848" width="500"/>
 </p>
 
 <p align="center">
-  <strong>User View</strong> &nbsp;&nbsp;&nbsp;&nbsp; <strong>User View</strong>
+  <strong>User View</strong> &nbsp;&nbsp;&nbsp;&nbsp;  &nbsp;&nbsp;&nbsp;&nbsp; <strong>User View</strong>
 </p>
 
 ### TODO
