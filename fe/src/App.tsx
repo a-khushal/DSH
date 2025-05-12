@@ -1,10 +1,22 @@
 import { useEffect, useState } from 'react';
-import { Power, Settings, DollarSign, Activity, Shield, LogOut, Wifi, WifiOff } from 'lucide-react';
+import { DollarSign, Activity, Shield, LogOut, Wifi, WifiOff, Plus } from 'lucide-react';
 import './index.css';
 
 interface User {
   id: string;
   email: string;
+  isAdmin?: boolean;
+}
+
+interface Task {
+  id: string;
+  targetUrl: string;
+  priority: string;
+  status: string;
+  createdAt: string;
+  proxyIP?: {
+    ipAddress: string;
+  };
 }
 
 function App() {
@@ -17,12 +29,18 @@ function App() {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
 
-  const [isActive, setIsActive] = useState(false);
+  const [_isActive, setIsActive] = useState(false);
   const [ipAddress, setIPAddress] = useState<string | undefined>(undefined);
   const [user, setUser] = useState<User | null>(null);
   const [isConnected, setIsConnected] = useState(false);
   const [isConnecting, setIsConnecting] = useState(false);
   const [connectionError, setConnectionError] = useState<string | null>(null);
+  
+  // Admin states
+  const [tasks, setTasks] = useState<Task[]>([]);
+  const [newTaskUrl, setNewTaskUrl] = useState('');
+  const [newTaskPriority, setNewTaskPriority] = useState('NORMAL');
+  const [isCreatingTask, setIsCreatingTask] = useState(false);
 
   useEffect(() => {
     const loadConnectionState = async () => {
@@ -47,7 +65,10 @@ function App() {
             
             if (payload.exp && payload.exp > currentTime) {
               setIsSignedIn(true);
-              setUser({ id: payload.userId, email: '' });
+              setUser({ id: payload.userId, email: '', isAdmin: payload.isAdmin });
+              if (payload.isAdmin) {
+                fetchTasks();
+              }
             } else {
               await chrome.storage.local.remove('token');
             }
@@ -64,6 +85,56 @@ function App() {
 
     checkAuth();
   }, []);
+
+  const fetchTasks = async () => {
+    try {
+      const { token } = await chrome.storage.local.get('token');
+      const response = await fetch('http://localhost:5000/api/tasks/admin/tasks', {
+        headers: {
+          'Authorization': token
+        }
+      });
+      if (response.ok) {
+        const data = await response.json();
+        setTasks(data);
+      }
+    } catch (error) {
+      console.error('Failed to fetch tasks:', error);
+    }
+  };
+
+  const handleCreateTask = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsCreatingTask(true);
+    setError('');
+
+    try {
+      const { token } = await chrome.storage.local.get('token');
+      const response = await fetch('http://localhost:5000/api/tasks/admin/tasks', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': token
+        },
+        body: JSON.stringify({
+          targetUrl: newTaskUrl,
+          priority: newTaskPriority
+        })
+      });
+
+      if (response.ok) {
+        setNewTaskUrl('');
+        setNewTaskPriority('NORMAL');
+        fetchTasks();
+      } else {
+        setError('Failed to create task');
+      }
+    } catch (error) {
+      setError('Failed to create task');
+    } finally {
+      setIsCreatingTask(false);
+    }
+  };
 
   const getIPAddress = async (): Promise<string | undefined> => {
     try {
@@ -119,7 +190,7 @@ function App() {
     }
 
     try {
-      const endpoint = showSignUp ? '/api/auth/signup' : '/api/auth/signin';
+      const endpoint = showSignUp ? '/api/users/signup' : '/api/users/signin';
       const response = await fetch(`http://localhost:5000${endpoint}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -259,95 +330,162 @@ function App() {
           >
             <LogOut size={20} />
           </button>
-          <button 
-            className="text-slate-600 hover:text-purple-600 dark:text-slate-400 dark:hover:text-purple-400 transition-colors"
-            title="Settings"
-          >
-            <Settings size={20} />
-          </button>
         </div>
       </div>
 
       <div className="space-y-6">
-        <div className="bg-slate-100 dark:bg-slate-800 rounded-lg p-4 transition-all duration-300 hover:shadow-lg">
-          <div className="flex items-center justify-between mb-2">
-            <div className="flex items-center space-x-2">
-              <span className="text-sm font-medium">Status</span>
-              <div className={`w-2 h-2 rounded-full ${isConnected ? 'bg-green-500 animate-pulse' : 'bg-red-500'}`} />
+        {user?.isAdmin ? (
+          <>
+            <div className="bg-slate-100 dark:bg-slate-800 rounded-lg p-4">
+              <h2 className="text-lg font-semibold mb-4">Create New Task</h2>
+              <form onSubmit={handleCreateTask} className="space-y-4">
+                <div>
+                  <input
+                    type="url"
+                    value={newTaskUrl}
+                    onChange={(e) => setNewTaskUrl(e.target.value)}
+                    placeholder="Target URL"
+                    className="w-full px-4 py-2 rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800"
+                    required
+                  />
+                </div>
+                <div>
+                  <select
+                    value={newTaskPriority}
+                    onChange={(e) => setNewTaskPriority(e.target.value)}
+                    className="w-full px-4 py-2 rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800"
+                  >
+                    <option value="LOW">Low Priority</option>
+                    <option value="NORMAL">Normal Priority</option>
+                    <option value="HIGH">High Priority</option>
+                  </select>
+                </div>
+                {error && <p className="text-red-500 text-sm">{error}</p>}
+                <button
+                  type="submit"
+                  disabled={isCreatingTask}
+                  className="w-full py-2 px-4 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors disabled:opacity-50 flex items-center justify-center space-x-2"
+                >
+                  <Plus size={20} />
+                  <span>{isCreatingTask ? 'Creating...' : 'Create Task'}</span>
+                </button>
+              </form>
             </div>
-            <button
-              onClick={handleConnection}
-              disabled={isConnecting}
-              className={`px-4 py-2 rounded-lg text-sm font-medium transition-all duration-300 flex items-center space-x-2 ${
-                isConnected
-                  ? 'bg-red-100 text-red-800 hover:bg-red-200 dark:bg-red-900 dark:text-red-100 dark:hover:bg-red-800'
-                  : 'bg-green-100 text-green-800 hover:bg-green-200 dark:bg-green-900 dark:text-green-100 dark:hover:bg-green-800'
-              } ${isConnecting ? 'opacity-50 cursor-not-allowed' : 'hover:scale-105'}`}
-            >
-              {isConnecting ? (
-                <>
-                  <div className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin" />
-                  <span>Connecting...</span>
-                </>
-              ) : (
-                <>
-                  {isConnected ? <WifiOff size={16} /> : <Wifi size={16} />}
-                  <span>{isConnected ? 'Disconnect' : 'Connect'}</span>
-                </>
-              )}
-            </button>
-          </div>
-          
-          {isConnected && ipAddress && (
-            <div className="mt-2 p-3 bg-white dark:bg-slate-700 rounded-md animate-fadeIn">
-              <div className="flex items-center space-x-2">
-                <Wifi className="text-green-500" size={16} />
-                <p className="text-sm text-slate-600 dark:text-slate-300">
-                  Connected IP: <span className="font-mono bg-slate-100 dark:bg-slate-600 px-2 py-1 rounded">{ipAddress}</span>
-                </p>
+
+            <div className="bg-slate-100 dark:bg-slate-800 rounded-lg p-4">
+              <h2 className="text-lg font-semibold mb-4">Tasks</h2>
+              <div className="space-y-4">
+                {tasks.map((task) => (
+                  <div
+                    key={task.id}
+                    className="p-4 border border-slate-200 dark:border-slate-700 rounded-lg"
+                  >
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <p className="font-medium">{task.targetUrl}</p>
+                        <p className="text-sm text-slate-500 dark:text-slate-400">
+                          Priority: {task.priority} | Status: {task.status}
+                        </p>
+                      </div>
+                      {task.proxyIP && (
+                        <p className="text-sm text-slate-500 dark:text-slate-400">
+                          IP: {task.proxyIP.ipAddress}
+                        </p>
+                      )}
+                    </div>
+                  </div>
+                ))}
+                {tasks.length === 0 && (
+                  <p className="text-slate-500 dark:text-slate-400 text-center py-4">
+                    No tasks found
+                  </p>
+                )}
               </div>
             </div>
-          )}
-          
-          {!isConnected && !isConnecting && (
-            <div className="mt-2 p-3 bg-white dark:bg-slate-700 rounded-md animate-fadeIn">
-              <p className="text-sm text-slate-500 dark:text-slate-400 flex items-center space-x-2">
-                <WifiOff className="text-red-500" size={16} />
-                <span>Click connect to start sharing bandwidth</span>
+          </>
+        ) : (
+          <>
+            <div className="bg-slate-100 dark:bg-slate-800 rounded-lg p-4 transition-all duration-300 hover:shadow-lg">
+              <div className="flex items-center justify-between mb-2">
+                <div className="flex items-center space-x-2">
+                  <span className="text-sm font-medium">Status</span>
+                  <div className={`w-2 h-2 rounded-full ${isConnected ? 'bg-green-500 animate-pulse' : 'bg-red-500'}`} />
+                </div>
+                <button
+                  onClick={handleConnection}
+                  disabled={isConnecting}
+                  className={`px-4 py-2 rounded-lg text-sm font-medium transition-all duration-300 flex items-center space-x-2 ${
+                    isConnected
+                      ? 'bg-red-100 text-red-800 hover:bg-red-200 dark:bg-red-900 dark:text-red-100 dark:hover:bg-red-800'
+                      : 'bg-green-100 text-green-800 hover:bg-green-200 dark:bg-green-900 dark:text-green-100 dark:hover:bg-green-800'
+                  } ${isConnecting ? 'opacity-50 cursor-not-allowed' : 'hover:scale-105'}`}
+                >
+                  {isConnecting ? (
+                    <>
+                      <div className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin" />
+                      <span>Connecting...</span>
+                    </>
+                  ) : (
+                    <>
+                      {isConnected ? <WifiOff size={16} /> : <Wifi size={16} />}
+                      <span>{isConnected ? 'Disconnect' : 'Connect'}</span>
+                    </>
+                  )}
+                </button>
+              </div>
+              
+              {isConnected && ipAddress && (
+                <div className="mt-2 p-3 bg-white dark:bg-slate-700 rounded-md animate-fadeIn">
+                  <div className="flex items-center space-x-2">
+                    <Wifi className="text-green-500" size={16} />
+                    <p className="text-sm text-slate-600 dark:text-slate-300">
+                      Connected IP: <span className="font-mono bg-slate-100 dark:bg-slate-600 px-2 py-1 rounded">{ipAddress}</span>
+                    </p>
+                  </div>
+                </div>
+              )}
+              
+              {!isConnected && !isConnecting && (
+                <div className="mt-2 p-3 bg-white dark:bg-slate-700 rounded-md animate-fadeIn">
+                  <p className="text-sm text-slate-500 dark:text-slate-400 flex items-center space-x-2">
+                    <WifiOff className="text-red-500" size={16} />
+                    <span>Click connect to start sharing bandwidth</span>
+                  </p>
+                </div>
+              )}
+
+              {connectionError && (
+                <div className="mt-2 p-2 bg-red-100 dark:bg-red-900/50 text-red-800 dark:text-red-200 rounded-md animate-shake">
+                  <p className="text-sm">{connectionError}</p>
+                </div>
+              )}
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <div className="bg-slate-100 dark:bg-slate-800 rounded-lg p-4 transition-all duration-300 hover:shadow-lg">
+                <div className="flex items-center space-x-2 mb-2">
+                  <DollarSign className="h-4 w-4 text-green-500" />
+                  <span className="text-sm font-medium">Earnings</span>
+                </div>
+                <p className="text-2xl font-bold">$0.00</p>
+              </div>
+              <div className="bg-slate-100 dark:bg-slate-800 rounded-lg p-4 transition-all duration-300 hover:shadow-lg">
+                <div className="flex items-center space-x-2 mb-2">
+                  <Activity className="h-4 w-4 text-blue-500" />
+                  <span className="text-sm font-medium">Bandwidth</span>
+                </div>
+                <p className="text-2xl font-bold">0 MB</p>
+              </div>
+            </div>
+
+            <div className="bg-slate-100 dark:bg-slate-800 rounded-lg p-4 transition-all duration-300 hover:shadow-lg">
+              <h3 className="text-sm font-medium mb-2">Recent Activity</h3>
+              <p className="text-sm text-slate-600 dark:text-slate-400">
+                No recent activity
               </p>
             </div>
-          )}
-
-          {connectionError && (
-            <div className="mt-2 p-2 bg-red-100 dark:bg-red-900/50 text-red-800 dark:text-red-200 rounded-md animate-shake">
-              <p className="text-sm">{connectionError}</p>
-            </div>
-          )}
-        </div>
-
-        <div className="grid grid-cols-2 gap-4">
-          <div className="bg-slate-100 dark:bg-slate-800 rounded-lg p-4 transition-all duration-300 hover:shadow-lg">
-            <div className="flex items-center space-x-2 mb-2">
-              <DollarSign className="h-4 w-4 text-green-500" />
-              <span className="text-sm font-medium">Earnings</span>
-            </div>
-            <p className="text-2xl font-bold">$0.00</p>
-          </div>
-          <div className="bg-slate-100 dark:bg-slate-800 rounded-lg p-4 transition-all duration-300 hover:shadow-lg">
-            <div className="flex items-center space-x-2 mb-2">
-              <Activity className="h-4 w-4 text-blue-500" />
-              <span className="text-sm font-medium">Bandwidth</span>
-            </div>
-            <p className="text-2xl font-bold">0 MB</p>
-          </div>
-        </div>
-
-        <div className="bg-slate-100 dark:bg-slate-800 rounded-lg p-4 transition-all duration-300 hover:shadow-lg">
-          <h3 className="text-sm font-medium mb-2">Recent Activity</h3>
-          <p className="text-sm text-slate-600 dark:text-slate-400">
-            No recent activity
-          </p>
-        </div>
+          </>
+        )}
       </div>
     </div>
   );

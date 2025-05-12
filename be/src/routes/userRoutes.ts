@@ -34,7 +34,7 @@ router.post('/signup', async (req, res) => {
         });
 
         const token = jwt.sign(
-            { userId: user.id },
+            { userId: user.id, isAdmin: user.isAdmin },
             process.env.JWT_SECRET || 'your-secret-key',
             { expiresIn: '24h' }
         );
@@ -42,7 +42,8 @@ router.post('/signup', async (req, res) => {
         res.status(201).json({
             user: {
                 id: user.id,
-                email: user.email
+                email: user.email,
+                isAdmin: user.isAdmin
             },
             token
         });
@@ -77,7 +78,7 @@ router.post('/signin', async (req, res) => {
         }
 
         const token = jwt.sign(
-            { userId: user.id },
+            { userId: user.id, isAdmin: user.isAdmin },
             process.env.JWT_SECRET || 'your-secret-key',
             { expiresIn: '24h' }
         );
@@ -90,7 +91,8 @@ router.post('/signin', async (req, res) => {
         res.json({
             user: {
                 id: user.id,
-                email: user.email
+                email: user.email,
+                isAdmin: user.isAdmin
             },
             token
         });

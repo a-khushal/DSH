@@ -1,15 +1,47 @@
 import express from 'express';
-import { requireAuth } from '@clerk/express';
 import { TaskDistributionService } from '../services/taskDistribution';
 import { PrismaClient } from '../../prisma/generated/prisma';
 import { RedisService } from '../services/redis';
+import jwt from 'jsonwebtoken';
 
 const router = express.Router();
 const prisma = new PrismaClient();
 const redis = new RedisService();
 const taskDistribution = new TaskDistributionService(prisma, redis);
 
-router.post('/proxy', requireAuth({ signInUrl: '/sign-in' }), async (req, res) => {
+const requireAuth = async (req: express.Request, res: express.Response, next: express.NextFunction) => {
+    try {
+        const token = req.headers.authorization;
+        
+        if (!token) {
+            res.status(401).json({ error: 'No token provided' });
+            return;
+        }
+        
+        const decoded = jwt.verify(token, process.env.JWT_SECRET || 'your-secret-key') as { userId: string };
+        
+        const user = await prisma.user.findUnique({
+            where: { id: decoded.userId }
+        });
+
+        if (!user) {
+            res.status(401).json({ error: 'Invalid user' });
+            return;
+        }
+
+        // @ts-ignore
+        req.auth = { userId: decoded.userId };
+        next();
+    } catch (error) {
+        if (error instanceof jwt.JsonWebTokenError) {
+            res.status(401).json({ error: 'Invalid token' });
+            return;
+        }
+        res.status(500).json({ error: 'Authentication failed' });
+    }
+};
+
+router.post('/proxy', requireAuth, async (req, res) => {
     try {
         const { ipAddress } = req.body;
         // @ts-ignore
@@ -20,23 +52,40 @@ router.post('/proxy', requireAuth({ signInUrl: '/sign-in' }), async (req, res) =
             return;
         }
 
-        const proxy = await prisma.proxyIP.create({
-            data: {
+        const existingProxy = await prisma.proxyIP.findFirst({
+            where: {
                 ipAddress,
-                userId,
-                isActive: true,
-                lastVerified: new Date()
+                userId
             }
         });
 
-        res.status(201).json(proxy);
+        if (existingProxy) {
+            const proxy = await prisma.proxyIP.update({
+                where: { id: existingProxy.id },
+                data: {
+                    isActive: true,
+                    lastVerified: new Date()
+                }
+            });
+            res.status(200).json(proxy);
+        } else {
+            const proxy = await prisma.proxyIP.create({
+                data: {
+                    ipAddress,
+                    userId,
+                    isActive: true,
+                    lastVerified: new Date()
+                }
+            });
+            res.status(201).json(proxy);
+        }
     } catch (error) {
         console.error('Error registering proxy:', error);
         res.status(500).json({ error: 'Failed to register proxy' });
     }
 });
 
-router.post('/admin/tasks', requireAuth({ signInUrl: '/sign-in' }), async (req, res) => {
+router.post('/admin/tasks', requireAuth, async (req, res) => {
     try {
         const { targetUrl, priority } = req.body;
         // @ts-ignore
@@ -78,7 +127,7 @@ router.post('/admin/tasks', requireAuth({ signInUrl: '/sign-in' }), async (req, 
     }
 });
 
-router.get('/admin/tasks', requireAuth({ signInUrl: '/sign-in' }), async (req, res) => {
+router.get('/admin/tasks', requireAuth, async (req, res) => {
     try {
         // @ts-ignore
         const userId = req.auth.userId;
@@ -107,7 +156,7 @@ router.get('/admin/tasks', requireAuth({ signInUrl: '/sign-in' }), async (req, r
     }
 });
 
-router.get('/earnings', requireAuth({ signInUrl: '/sign-in' }), async (req, res) => {
+router.get('/earnings', requireAuth, async (req, res) => {
     try {
         // @ts-ignore
         const userId = req.auth.userId;
