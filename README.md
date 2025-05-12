@@ -31,7 +31,7 @@ MeshMint is a Chrome extension that enables users to share their bandwidth and e
 
 ## Problem Statement
 
-picked from build.superteam.fun (Shek's idea) - [link](https://build.superteam.fun/ideas/decentralized-scraping-hub) 
+idea has been picked from [link](build.superteam.fun) by Shek - [link](https://build.superteam.fun/ideas/decentralized-scraping-hub) 
 
 AI builders constantly need new sources of data to train and improve their models. Web scraping is a crucial method for data collection, but it faces significant challenges:
 
