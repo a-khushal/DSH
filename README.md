@@ -95,9 +95,10 @@ cd ../fe
 npm run dev
 ```
 6. Load the Chrome extension:
+- build the frontend `npm run dev`
 - Open Chrome and go to `chrome://extensions/`
 - Enable "Developer mode"
-- Click "Load unpacked" and select the `fe` directory
+- Click "Load unpacked" and select the `fe/dist` directory
 
 ## Usage
 
